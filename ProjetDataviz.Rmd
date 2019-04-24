@@ -1,0 +1,249 @@
+---
+title: "La crise de l'euro"
+author: "[thomas blachier](https://github.com/thomas-blachier)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+mail: "thomas.blachier@mines-ales.org"
+github: "thomas-blachier"
+
+output:
+  epuRate::PCTG:
+    toc: TRUE
+    number_sections: FALSE
+    code_folding: "hide"
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# importation de toute les librairie necessaires 
+library(rmarkdown)    # install.packages("rmarkdown") 
+library(epuRate)      # devtools::install_github("holtzy/epuRate", force=TRUE)
+library(WDI)#importation des données de la World Bank disponibles sur R 
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(hrbrthemes)
+library(viridis)
+library(plotly)
+library(Hmisc)
+library(treemap)
+library(d3heatmap)
+library(qqman)
+library(DT)
+
+
+```
+
+<br><br><br><br>
+
+>Bienvenue sur le dossier de la crise de l'Euro [EuroCrisis](https://github.com/thomas-blachier). Ce document décrit les raisons de la crise de l'euro et les consequences sur les pays de la zone Euro.
+
+
+
+
+
+# La situation mondiale
+***
+Lors de l'année 2007 les prêts hypothecaires accordés aux ménages les moins solvables (subprimes) ont causé un grand nombre de défauts de paiements, et la revente des biens immobiliers par les banques ont submergé le marché immobilier, le faisant brusquement chuter.
+
+Cette crise d'abord financière a affecté l'économie mondiale et est devenue la crise économique de 2008.Entre 2007 et 2009 , on voit le PIB par Habitant de nombreux pays reculer. Néanmoins, celui repart de façon mondiale dès 2009. 
+
+Malheureusement, la zone Euro est elle particulièrement touchée par la crise financière et le PIB par Habitant se remet a infléchir négativement entre 2011 et 2013 : C'est ce qu'on appellera la crise de l'Euro.  
+
+```{r, message=FALSE,warning=FALSE}
+
+#importation des données 
+Gdppercapita = WDI(indicator='NY.GDP.PCAP.KD', country =c('EMU','CA','US','GBR'), start=1992, end=2018)#donnees de la zone euro, UK,US et Canada
+Gdppercapita%>%
+  ggplot()+
+  geom_line(aes(year, NY.GDP.PCAP.KD, color=country), size=1)+
+  xlab('Année')+
+  ylab(NULL)+
+  ggtitle('PiB par habitant en dollars enchainés de 2010')+
+  geom_vline(xintercept=2008, color="orange", size=12,alpha=0.25)+
+  geom_vline(xintercept=2012, color="green", size=12,alpha=0.25)+#on trace deux ecrans vert et orange pour montrer les crises
+  annotate(geom="text", x=2007, y=30000, label="Crise de 2008")+
+  annotate(geom="text", x=2013, y=30000, label="Crise de l'euro")
+  
+
+  
+  
+  
+  
+```
+Avec l'arrivée de l'Euro en 1999 (monnaie scripturale, c'est a dire dans les comptes courants des banques) , la libre circulation des capitaux a permis à certains pays de racheter les dettes souveraines d'autres pays, on observe une convergence des taux d'interêts de tous les pays de la zone euro entre 1999 et 2008.
+
+Les marchés ne sont pas forcément parfaitement au courant du fonctionnement de la banque centrale européenne qui n'a pas le droit de renflouer un état de la zone euro contrairement à toutes les autres banques centrales.
+
+Les marchés se sont donc mis à acheter des dettes d'états membres de la zone euro quasiment au mêmes taux, et de façon indifferente quelque soit le pays.     
+
+
+```{r, warning=FALSE}
+interest=read.csv(file="interest.csv",sep=",",header = TRUE,dec = ".")#importation du csv interest
+interest%>%
+  ggplot(file='interest.csv', aes(x=as.Date(date), y=s1, group = pays , color=pays),size=1)+
+  geom_line()+
+  xlab('année')+
+  ylab('%')+
+  ggtitle("Taux d'intérêt, obligation d'état (maturité 10 ans)")+
+  geom_vline(xintercept=as.Date('1999-01-31'), color="red")+
+  geom_vline(xintercept=as.Date('2008-09-30'), color="blue")+
+  annotate(geom="text", y=31, x=as.Date('2002-03-31'), label="Arrivée de l'Euro",color = "red")+#trait de l'apparition de l'Euro 
+  annotate(geom="text", y=31, x=as.Date('2014-01-31'), label="Faillite de Lehman brothers",color = "blue")#trait de la faillite de Lehman Brothers
+
+  
+```
+
+
+
+
+
+
+# Pays du sud vs Pays du nord
+***
+
+La crise de l'Euro s'est répandue à l'ensemble de la zone Euro, cependant il y a de très fortes disparités au sein de cette même zone.
+
+Les "pays du sud" ("PIGS"en anglais) les sont les plus touchés .Ce groupe est composé de l'Espagne, la Grèce, l'Italie, le Portugal et dans une moindre mesure de l'Irlande.Ces pays ont du moins pendant la crise de l'euro la plus grande dette publique, le plus fort taux de chômage et la plus faible croissance du PIB.
+
+Au contraire les "pays du nord"(Allemagne,Luxembourg,Autriche,Finlande,Belgique,Pays-bas) sont ceux avec les meilleurs indicateurs économiques.La France joue le rôle d'intermédiaire entre "sud" et "nord".
+
+Pour étudier ces disparités nous prendrons pour étude deux pays d'étude représentatifs des pays du "sud" et du "nord" que sontl'Italie et l'Allemagne .
+
+
+Pour commencer revenons sur les taux d'interêts de l'Italie et de l'Allemagne:
+
+On peut voir que les taux d'interêts des deux pays tendent à converger entre l'arrivée de l'Euro et la faillite de Lehman Brothers.
+
+Situation qui a permit au ménages et aux entreprises des "pays du sud" moins développés économiquement de s'équiper et ainsi d'endetter notamment auprès des "pays du nord"  .
+
+```{r, warning=FALSE}
+taux=read.csv(file="taux.csv",sep=",",header = TRUE,dec = ".")#taux d'interêts italie allemagne importation du csv taux
+taux%>%
+  ggplot(file='taux.csv', aes(x=as.Date(date), y=s1, group = pays , color=pays),size=1,start=1998-02-28)+
+  geom_line()+
+  xlab('année')+
+  ylab('%')+
+  ggtitle("Taux d'intérêt, obligation d'état (maturité 10 ans)")+
+  geom_vline(xintercept=as.Date('1999-01-31'), color="red")+
+  geom_vline(xintercept=as.Date('2008-09-30'), color="blue")+
+  annotate(geom="text", y=10, x=as.Date('2002-03-31'), label="Arrivée de l'Euro",color = "red")+
+  annotate(geom="text", y=10, x=as.Date('2014-01-31'), label="Faillite de Lehman brothers",color = "blue")
+
+  
+```
+
+Le Pib par habitant des "pays du sud" et "pays du nord" s'est contracté durant la crise de 2008, mais c'est surtout les "pays du sud" qui patissent de la crise de l'Euro.Il est a noter que la croisance du Pib par habitant à bien ralenti dans les "pays du nord"
+
+```{r, warning=FALSE}
+Gdppercapita2 = WDI(indicator='NY.GDP.PCAP.KD', country =c('DEU','ITA'), start=1992, end=2018)
+Gdppercapita2%>%
+  ggplot()+
+  geom_line(aes(year, NY.GDP.PCAP.KD, color=country),size=1,alpha=1)+
+  xlab('Année')+
+  ylab(NULL)+
+  ggtitle('PiB par habitant en dollars enchainés de 2010')+
+  geom_vline(xintercept=2008, color="orange", size=14,alpha=0.25)+
+  geom_vline(xintercept=2012, color="green", size=14,alpha=0.25)+
+  annotate(geom="text", x=2007, y=30000, label="Crise de 2008")+
+  annotate(geom="text", x=2013, y=30000, label="Crise de l'euro")
+  
+  
+  
+```
+
+Autre indicateur, le taux de chômage augmente dans les "pays du sud" tandis qu'il diminue dans les "pays du nord".
+
+```{r, warning=FALSE}
+chomage = WDI(indicator='SL.UEM.TOTL.ZS', country =c('ITA','DEU'), start=2006, end=2016)
+chomage%>%
+  ggplot()+
+  geom_line(aes(year, SL.UEM.TOTL.ZS, color=country),size=0.75)+
+  xlab('Année')+
+  ylab('% de la population active' )+
+  ggtitle('chômage en zone euro')+
+  geom_vline(xintercept=2008, color="orange", size=34,alpha=0.25)+
+  geom_vline(xintercept=2012, color="green", size=34,alpha=0.25)+
+  annotate(geom="text", x=2008, y=5, label="Crise de 2008")+
+  annotate(geom="text", x=2012, y=5, label="Crise de l'euro")
+
+```
+
+# Une crise de la dette
+***
+
+La crise de l'euro est avant tout la crainte pour les investisseurs par rapport à la soutenabilité de la dette publique des états de la zone Euro.
+
+En effet, la dette publique des états de la zone Euro ne cesse de grimper chez les "pays du sud" comme le montre cette 'heatmap interactive'.
+
+Plus le carré est bleu, plus le pays est endetté et plus il est rouge, moins il est endetté. 
+
+```{r}
+evolution = read.csv(file = "evoludette.csv",header = TRUE , sep = ",",dec = ".",row.names = 1)#importation csv evoludette ,tranformation des données en matrices 
+  d3heatmap(evolution, Colv=NA, Rowv=NA)#suppresion du dendrographe
+   
+```
+
+Parmi les pays les plus endettés, la Grèce se démarque largement comme le montre ce graphique qui permet de visualiser les dettes publiques rapportées au Pib en 2011, c'est à dire en pleine crise de l'Euro.
+
+La ligne rouge correspond au niveau d'endettement limite pour entrer dans la zone Euro (60% du PIB). c'est une règle qui est d'ailleurs censé être respectée par les états membres, mais qui n'est en pratique respectée par pratiquement aucun pays.
+
+
+
+
+```{r, warning=FALSE}
+dette = read.csv(file="debt.csv",sep=",",header = TRUE,dec = ",")#importation du csv debt
+dette %>%
+  filter(!is.na(dette.publique.en...du.PIB)) %>%
+  arrange(dette.publique.en...du.PIB) %>%
+  mutate(pays=factor(pays, pays)) %>%
+  ggplot( aes(x=pays, y=dette.publique.en...du.PIB) ) +
+    geom_segment( aes(x=pays ,xend=pays, y=0, yend=dette.publique.en...du.PIB), color="grey") +#fond gris
+    geom_point(size=5, color="#69b3a2") +
+    xlab("")+
+    ylab("Dette publique en % de PIB de 2011 ")+
+    coord_flip()+
+    geom_hline(yintercept=60, color="red", size=1,alpha=1)+#Ligne de la limite de maastricht
+    annotate(geom="text", y=111, x='luxembourg', label="Critère d'entrée dans l'euro (traité de Maastricht)",color = "red")
+    
+
+```
+
+La Grèce est rentrée dans l'Euro en 2001, on peut voir qu'elle ne respectait pas le traité de Maastricht.En effet, la Grèce a pu maquiller sa dette avec l'aide de banques d'investissements comme Goldman Sachs et d'un produit financier appellé REPO.
+
+```{r,warning=FALSE}
+evolution2 = read.csv(file = "evoludette2.csv",header = TRUE , sep = ",",dec = ".")#importation du csv evoludette2 le meme que evoludette mais transposé
+evolution2%>%
+  ggplot()+
+  geom_line(aes(x=année ,y= Grece ),color='red')+
+  xlab('Année')+
+  ylab(' % du PIB' )+
+  ggtitle('Evolution de la dette publique grecque')+
+  geom_vline(xintercept=2008, size=23,color = 'orange',alpha=0.25)+
+  geom_vline(xintercept=2012, color="green", size=23,alpha=0.25)+
+  annotate(geom="text", x=2008, y=5, label="Crise de 2008")+
+  annotate(geom="text", x=2012, y=5, label="Crise de l'euro")+
+  geom_hline(yintercept=60, color="red", size=1,alpha=1)+
+  annotate(geom="text", y=50, x = 2003 , label="Critère d'entrée dans l'euro (traité de Maastricht)",color = "red")
+```
+
+
+Ce graphique permet de relativiser, l'endettement publique de la Grèce.En effet, la grèce est un petit pays avec un faible PIB, sa dette publique n'est donc pas si importante que cela.
+
+```{r, warning=FALSE}
+dette = read.csv(file="debt.csv",sep=",",header = TRUE,dec = ",")#importat
+treemap(dette,index="pays",vSize="dette.publique.en.milliard.d.euros",type="index",title = "Comparaison de la dette publique de chaque pays de la zone euro en 2011  ")#utilisation de treemap
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
